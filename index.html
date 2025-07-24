@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Website Akuntansi Pribadi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      .fade-in {
+        animation: fadeIn 0.3s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .transaction-item:hover {
+        transform: translateX(5px);
+        transition: transform 0.2s ease;
+      }
+    </style>
+  </head>
+  <body class="bg-pink-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+      <header class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-pink-600">Laporan Keuangan</h1>
+        <p class="text-gray-600 mt-2">Kelola keuangan Anda dengan mudah</p>
+      </header>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Form Input Transaksi -->
+        <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-md">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">
+            Tambah Transaksi
+          </h2>
+          <form id="transactionForm" class="space-y-4">
+            <div>
+              <label for="type" class="block text-sm font-medium text-gray-700"
+                >Jenis Transaksi</label
+              >
+              <select
+                id="type"
+                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md border"
+              >
+                <option value="income">Pemasukan</option>
+                <option value="expense">Pengeluaran</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                for="category"
+                class="block text-sm font-medium text-gray-700"
+                >Kategori</label
+              >
+              <input
+                type="text"
+                id="category"
+                class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2"
+                placeholder="Contoh: Gaji, Makanan, Transportasi"
+              />
+            </div>
+
+            <div>
+              <label
+                for="amount"
+                class="block text-sm font-medium text-gray-700"
+                >Jumlah</label
+              >
+              <input
+                type="number"
+                id="amount"
+                class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2"
+                placeholder="Rp"
+              />
+            </div>
+
+            <div>
+              <label for="date" class="block text-sm font-medium text-gray-700"
+                >Tanggal</label
+              >
+              <input
+                type="date"
+                id="date"
+                class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2"
+              />
+            </div>
+
+            <div>
+              <label
+                for="description"
+                class="block text-sm font-medium text-gray-700"
+                >Deskripsi</label
+              >
+              <textarea
+                id="description"
+                rows="3"
+                class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md border p-2"
+                placeholder="Catatan tambahan"
+              ></textarea>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-500 hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+            >
+              Simpan Transaksi
+            </button>
+          </form>
+        </div>
+
+        <!-- Ringkasan dan Grafik -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Ringkasan Keuangan -->
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+              Ringkasan Keuangan
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+                <p class="text-sm text-pink-600">Total Pemasukan</p>
+                <p id="totalIncome" class="text-2xl font-bold text-pink-700">
+                  Rp0
+                </p>
+              </div>
+              <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+                <p class="text-sm text-red-600">Total Pengeluaran</p>
+                <p id="totalExpense" class="text-2xl font-bold text-red-700">
+                  Rp0
+                </p>
+              </div>
+              <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <p class="text-sm text-blue-600">Saldo</p>
+                <p id="totalBalance" class="text-2xl font-bold text-blue-700">
+                  Rp0
+                </p>
+              </div>
+            </div>
+
+            <div class="mt-6">
+              <canvas id="financeChart" height="200"></canvas>
+            </div>
+          </div>
+
+          <!-- Daftar Transaksi -->
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-semibold text-gray-800">
+                Daftar Transaksi
+              </h2>
+              <div class="flex space-x-2">
+                <button
+                  onclick="printTransactions()"
+                  class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-3 rounded-md text-sm border border-gray-300"
+                >
+                  Cetak
+                </button>
+                <select
+                  id="filterType"
+                  class="text-sm border-gray-300 rounded-md border p-1"
+                >
+                  <option value="all">Semua</option>
+                  <option value="income">Pemasukan</option>
+                  <option value="expense">Pengeluaran</option>
+                </select>
+                <select
+                  id="filterMonth"
+                  class="text-sm border-gray-300 rounded-md border p-1"
+                >
+                  <option value="all">Semua Bulan</option>
+                  <option value="1">Januari</option>
+                  <option value="2">Februari</option>
+                  <option value="3">Maret</option>
+                  <option value="4">April</option>
+                  <option value="5">Mei</option>
+                  <option value="6">Juni</option>
+                  <option value="7">Juli</option>
+                  <option value="8">Agustus</option>
+                  <option value="9">September</option>
+                  <option value="10">Oktober</option>
+                  <option value="11">November</option>
+                  <option value="12">Desember</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Tanggal
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Kategori
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Deskripsi
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Jumlah
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="transactionsList"
+                  class="bg-white divide-y divide-gray-200"
+                >
+                  <!-- Transaksi akan dimuat di sini -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Inisialisasi variabel
+      let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
+      let financeChart = null;
+
+      // DOM Elements
+      const transactionForm = document.getElementById("transactionForm");
+      const transactionsList = document.getElementById("transactionsList");
+      const totalIncomeElement = document.getElementById("totalIncome");
+      const totalExpenseElement = document.getElementById("totalExpense");
+      const totalBalanceElement = document.getElementById("totalBalance");
+      const financeChartCanvas = document.getElementById("financeChart");
+      const filterType = document.getElementById("filterType");
+      const filterMonth = document.getElementById("filterMonth");
+
+      // Format tanggal ke format Indonesia
+      function formatDate(dateString) {
+        const options = { day: "2-digit", month: "long", year: "numeric" };
+        return new Date(dateString).toLocaleDateString("id-ID", options);
+      }
+
+      // Format rupiah
+      function formatRupiah(amount) {
+        return new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          minimumFractionDigits: 0,
+        }).format(amount);
+      }
+
+      // Hitung total pemasukan, pengeluaran, dan saldo
+      function calculateTotals() {
+        const totalIncome = transactions
+          .filter((t) => t.type === "income")
+          .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+        const totalExpense = transactions
+          .filter((t) => t.type === "expense")
+          .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+        const balance = totalIncome - totalExpense;
+
+        totalIncomeElement.textContent = formatRupiah(totalIncome);
+        totalExpenseElement.textContent = formatRupiah(totalExpense);
+        totalBalanceElement.textContent = formatRupiah(balance);
+
+        updateChart(totalIncome, totalExpense);
+      }
+
+      // Update grafik
+      function updateChart(income, expense) {
+        const data = {
+          labels: ["Pemasukan", "Pengeluaran"],
+          datasets: [
+            {
+              data: [income, expense],
+              backgroundColor: [
+                "rgba(236, 72, 153, 0.7)",
+                "rgba(249, 168, 212, 0.7)",
+              ],
+              borderColor: ["rgba(236, 72, 153, 1)", "rgba(249, 168, 212, 1)"],
+              borderWidth: 1,
+            },
+          ],
+        };
+
+        const config = {
+          type: "bar",
+          data: data,
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: false,
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+          },
+        };
+
+        if (financeChart) {
+          financeChart.data.datasets[0].data = [income, expense];
+          financeChart.update();
+        } else {
+          financeChart = new Chart(financeChartCanvas, config);
+        }
+      }
+
+      // Tampilkan transaksi
+      function renderTransactions(filter = { type: "all", month: "all" }) {
+        transactionsList.innerHTML = "";
+
+        let filteredTransactions = [...transactions];
+
+        if (filter.type !== "all") {
+          filteredTransactions = filteredTransactions.filter(
+            (t) => t.type === filter.type
+          );
+        }
+
+        if (filter.month !== "all") {
+          filteredTransactions = filteredTransactions.filter((t) => {
+            const date = new Date(t.date);
+            return date.getMonth() + 1 === parseInt(filter.month);
+          });
+        }
+
+        if (filteredTransactions.length === 0) {
+          transactionsList.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">Tidak ada transaksi</td>
+                    </tr>
+                `;
+          return;
+        }
+
+        filteredTransactions.forEach((transaction, index) => {
+          const row = document.createElement("tr");
+          row.className = `transaction-item ${
+            index % 2 === 0 ? "bg-gray-50" : "bg-white"
+          }`;
+          row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(
+                      transaction.date
+                    )}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
+                      transaction.category
+                    }</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${
+                      transaction.description || "-"
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm ${
+                      transaction.type === "income"
+                        ? "text-green-600 font-semibold"
+                        : "text-red-600 font-semibold"
+                    }">
+                        ${
+                          transaction.type === "income" ? "+" : "-"
+                        } ${formatRupiah(transaction.amount)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="deleteTransaction(${
+                          transaction.id
+                        })" class="text-red-600 hover:text-red-900">Hapus</button>
+                    </td>
+                `;
+          transactionsList.appendChild(row);
+        });
+      }
+
+      // Hapus transaksi
+      window.deleteTransaction = function (id) {
+        if (confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) {
+          transactions = transactions.filter((t) => t.id !== id);
+          localStorage.setItem("transactions", JSON.stringify(transactions));
+          calculateTotals();
+          renderTransactions(getCurrentFilter());
+        }
+      };
+
+      // Dapatkan filter saat ini
+      function getCurrentFilter() {
+        return {
+          type: filterType.value,
+          month: filterMonth.value,
+        };
+      }
+
+      // Event Listeners
+      transactionForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const type = document.getElementById("type").value;
+        const category = document.getElementById("category").value.trim();
+        const amount = parseFloat(document.getElementById("amount").value);
+        const date = document.getElementById("date").value;
+        const description = document.getElementById("description").value.trim();
+
+        // Validasi sederhana
+        if (!category || !amount || !date) {
+          alert("Harap isi semua kolom yang wajib!");
+          return;
+        }
+
+        const newTransaction = {
+          id: Date.now(),
+          type,
+          category,
+          amount,
+          date,
+          description,
+        };
+
+        transactions.push(newTransaction);
+        localStorage.setItem("transactions", JSON.stringify(transactions));
+
+        // Reset form
+        transactionForm.reset();
+        document.getElementById("date").valueAsDate = new Date();
+
+        calculateTotals();
+        renderTransactions(getCurrentFilter());
+
+        // Animasi
+        const newRow = transactionsList.lastElementChild;
+        newRow.classList.add("fade-in");
+      });
+
+      filterType.addEventListener("change", () => {
+        renderTransactions(getCurrentFilter());
+      });
+
+      filterMonth.addEventListener("change", () => {
+        renderTransactions(getCurrentFilter());
+      });
+
+      // Fungsi untuk mencetak transaksi
+      window.printTransactions = function () {
+        const filter = getCurrentFilter();
+        let transactionsToPrint = [...transactions];
+
+        if (filter.type !== "all") {
+          transactionsToPrint = transactionsToPrint.filter(
+            (t) => t.type === filter.type
+          );
+        }
+
+        if (filter.month !== "all") {
+          transactionsToPrint = transactionsToPrint.filter((t) => {
+            const date = new Date(t.date);
+            return date.getMonth() + 1 === parseInt(filter.month);
+          });
+        }
+
+        const printWindow = window.open("", "_blank");
+        const printContent = `
+                <html>
+                <head>
+                    <title>Laporan Transaksi Akuntansi Pribadi</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        h1 { color: #4f46e5; text-align: center; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th { background-color: #f3f4f6; padding: 8px; text-align: left; border: 1px solid #ddd; }
+                        td { padding: 8px; border: 1px solid #ddd; }
+                        .income { color: green; }
+                        .expense { color: red; }
+                        .summary { margin-top: 30px; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Laporan Transaksi Pribadi</h1>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Kategori</th>
+                                <th>Deskripsi</th>
+                                <th>Jumlah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${transactionsToPrint
+                              .map(
+                                (t) => `
+                                <tr>
+                                    <td>${formatDate(t.date)}</td>
+                                    <td>${t.category}</td>
+                                    <td>${t.description || "-"}</td>
+                                    <td class="${t.type}">${
+                                  t.type === "income" ? "+" : "-"
+                                } ${formatRupiah(t.amount)}</td>
+                                </tr>
+                            `
+                              )
+                              .join("")}
+                        </tbody>
+                    </table>
+                    <div class="summary">
+                        <p>Total Pemasukan: ${formatRupiah(
+                          transactionsToPrint
+                            .filter((t) => t.type === "income")
+                            .reduce((sum, t) => sum + parseFloat(t.amount), 0)
+                        )}</p>
+                        <p>Total Pengeluaran: ${formatRupiah(
+                          transactionsToPrint
+                            .filter((t) => t.type === "expense")
+                            .reduce((sum, t) => sum + parseFloat(t.amount), 0)
+                        )}</p>
+                        <p>Saldo: ${formatRupiah(
+                          transactionsToPrint
+                            .filter((t) => t.type === "income")
+                            .reduce((sum, t) => sum + parseFloat(t.amount), 0) -
+                            transactionsToPrint
+                              .filter((t) => t.type === "expense")
+                              .reduce((sum, t) => sum + parseFloat(t.amount), 0)
+                        )}</p>
+                    </div>
+                    <p style="margin-top: 30px; text-align: right; font-style: italic;">Dicetak pada ${new Date().toLocaleString(
+                      "id-ID"
+                    )}</p>
+                </body>
+                </html>
+            `;
+
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.print();
+      };
+
+      // Inisialisasi
+      document.getElementById("date").valueAsDate = new Date();
+      calculateTotals();
+      renderTransactions(getCurrentFilter());
+    </script>
+  </body>
+</html>
